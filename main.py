@@ -10,7 +10,7 @@ load_dotenv()
 mcp = FastMCP()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-s
+
 llm = ChatBedrockConverse(
     model_id="us.anthropic.claude-sonnet-4-20250514-v1:0",
     region_name=os.getenv("AWS_REGION", "us-east-2"),
