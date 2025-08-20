@@ -1,0 +1,146 @@
+from mcp.server.fastmcp import FastMCP
+from pathlib import Path
+from dotenv import load_dotenv
+from pymongo import MongoClient
+import os
+import httpx
+import psycopg
+from psycopg.rows import dict_row
+
+mcp = FastMCP()
+@mcp.tool()
+def saludar(nombre: str) -> str:
+    """
+    Devuelve un saludo personalizado.
+
+    Parámetros:
+    - nombre: nombre de la persona a saludar
+
+    Retorna:
+    - Un saludo en texto
+    """
+    return f"Hola, {nombre}! ¿Cómo estás hoy?"
+
+@mcp.tool()
+def sumar(a: int, b: int) -> int:
+    """Suma dos números enteros.""" # esto le sirve al llm para saber cuando hacerlo
+    return a + b
+
+@mcp.tool() #el path es para trabajar con archivos
+def analizar_archivos(archivo: Path) -> dict:
+    """Analiza un archivo y devuelve estadísticas."""
+    path = Path(archivo)
+    if not path.exists():
+        raise FileNotFoundError(f"El archivo {path} no existe.")
+
+    return {
+        "nombre": path.name,
+        "tamaño": path.stat().st_size,
+        "tipo": path.suffix,
+        "último_modificado": path.stat().st_mtime
+    }
+
+@mcp.tool()
+async def buscar_repos(query: str) -> list[dict]:
+    """Busca repositorios en GitHub."""
+    url = f"https://api.github.com/search/repositories?q={query}"
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url, headers={"Accept": "application/vnd.github.v3+json"})
+        response.raise_for_status()
+    
+    return [{
+        'name': repo['name'],
+        'html_url': repo['html_url'],
+        'url': repo['html_url']
+    } for repo in response.json()['items']]
+
+load_dotenv()
+MONGODB_URI = os.getenv("MONGODB_URI")
+
+@mcp.tool()
+def consultar_mongodb1(accion: str, base: str, coleccion: str = None, documento: dict = None, filtro: dict = None) -> dict:
+    """
+    Ejecuta acciones sobre MongoDB Atlas:
+    - "crear_coleccion"      → Crea una nueva colección
+    - "insertar_documento"   → Inserta un documento en una colección
+    - "eliminar_documento"   → Elimina un documento de una colección
+    - "listar_colecciones"   → Lista las colecciones de una base
+    - "buscar_documentos"    → Busca documentos con un filtro opcional
+    """
+    if not MONGODB_URI:
+        return {"error": "MONGODB_URI no está definido en el archivo .env"}
+
+    client = MongoClient(MONGODB_URI)
+    db = client[base]
+
+    try:
+        if accion == "crear_coleccion":
+            db.create_collection(coleccion)
+            return {"ok": True, "accion": "crear_coleccion", "coleccion": coleccion}
+
+        elif accion == "insertar_documento":
+            if not coleccion or not documento:
+                return {"error": "Se requieren 'coleccion' y 'documento' para insertar."}
+            res = db[coleccion].insert_one(documento)
+            return {"ok": True, "inserted_id": str(res.inserted_id)}
+
+        elif accion == "eliminar_documento":
+            if not coleccion or not filtro:
+                return {"error": "Se requieren 'coleccion' y 'filtro' para eliminar."}
+            res = db[coleccion].delete_one(filtro)
+            return {"ok": True, "deleted_count": res.deleted_count}
+
+        elif accion == "listar_colecciones":
+            return {"colecciones": db.list_collection_names()}
+
+        elif accion == "buscar_documentos":
+            if not coleccion:
+                return {"error": "Se requiere el parámetro 'coleccion' para buscar documentos."}
+            resultados = list(db[coleccion].find(filtro or {}).limit(20))
+            for doc in resultados:
+                doc["_id"] = str(doc["_id"])
+            return {"resultados": resultados}
+
+        else:
+            return {"error": f"Acción no reconocida: {accion}"}
+
+    except Exception as e:
+        return {"error": f"{type(e).__name__}: {str(e)}"}
+    
+
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+@mcp.tool()
+def pg_query(sql_text: str, params: dict | None = None, limit: int = 100) -> dict:
+    """
+    Ejecuta una consulta SELECT segura contra PostgreSQL usando DATABASE_URL del .env.
+    - Solo permite sentencias que comiencen con 'SELECT'.
+    - Aplica LIMIT automático si no está presente.
+    - 'params' permite parámetros nombrados (ej: %(e)s).
+
+    Ejemplos:
+      {"sql_text": "SELECT * FROM public.clientes WHERE email = %(e)s", "params": {"e":"ana@example.com"}}
+      {"sql_text": "SELECT id, nombre FROM public.clientes ORDER BY id", "limit": 50}
+    """
+    if not DATABASE_URL:
+        return {"ok": False, "error": "DATABASE_URL no está definida en .env"}
+
+    if not sql_text or not sql_text.strip().lower().startswith("select"):
+        return {"ok": False, "error": "Solo se permiten consultas SELECT"}
+
+    # agrega LIMIT si no existe uno explícito
+    add_limit = " limit " not in sql_text.strip().lower()
+    query = sql_text + (f" LIMIT {int(limit)}" if add_limit else "")
+
+    try:
+        with psycopg.connect(DATABASE_URL, row_factory=dict_row) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, params or {})
+                rows = cur.fetchall()
+        return {"ok": True, "rows": rows, "meta": {"applied_limit": add_limit, "limit": limit}}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+if __name__ == "__main__":
+    mcp.run()

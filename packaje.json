@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "~/Desktop"
+      ]
+    },
+    "herramientas_locales5": {
+      "command": "C:/Users/Fernando/practica/MCP/venv/Scripts/python.exe",
+      "args": [
+        "C:/Users/Fernando/practica/MCP/main.py"
+      ]
+    },
+    "neon1": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@neondatabase/mcp-server-neon",
+        "start",
+        "postgresql://neondb_owner:bYAsBdo10TOy@ep-curly-breeze-a5beykxn-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+      ]
+  }
+  }}
