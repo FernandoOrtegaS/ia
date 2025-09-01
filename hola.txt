@@ -144,3 +144,88 @@ def pg_query(sql_text: str, params: dict | None = None, limit: int = 100) -> dic
 
 if __name__ == "__main__":
     mcp.run()
+
+
+
+
+
+
+
+       Contexto de la base de datos
+
+    La base de datos contiene **tablas dimensionales (prefijo `dim_`)** que sirven para almacenar entidades descriptivas, métricas y catálogos usados en reportes y análisis.  
+A continuación, se describen las principales categorías:
+
+ESQUEMA "dbo"
+
+### 1. Métricas agregadas
+- **dim_aggregatebotmetrics** → Métricas agregadas de interacciones con bots.  
+- **dim_aggregatecampaignmetrics** → Métricas de campañas (ej. llamadas o mensajes salientes).  
+- **dim_aggregatedayqueuemetrics** → Métricas de colas de atención por día.  
+- **dim_aggregateflowmetrics** → Métricas de flujos (ej. IVR o flujos de conversación).  
+- **dim_aggregatequeueagentmetrics** → Métricas de agentes en colas de atención.  
+- **dim_aggregatequeuemetrics** → Métricas generales de colas.  
+- **dim_aggregatetranscriptsmetrics** → Métricas relacionadas con transcripciones.  
+- **dim_aggregateusermetrics** → Métricas globales por usuario.  
+- **dim_aggregateuserpresencemetrics** → Métricas de presencia (disponible, ausente, etc.).  
+- **dim_aggregatewrapupcodemetrics** → Métricas por códigos de cierre (wrap-up codes).  
+- **dim_billingusagemetrics** → Métricas de facturación y uso.  
+- **dim_trunkmetrics** → Métricas relacionadas con troncales de comunicación.
+
+### 2. Conversaciones y evaluaciones
+- **dim_conversation** → Conversaciones individuales.  
+- **dim_conversationdivisions** → División de conversaciones por área o segmento.  
+- **dim_conversationevaluations** → Evaluaciones de calidad de conversaciones.  
+- **dim_conversationevaluationsquestionsgroupscores** → Puntuaciones por grupos de preguntas en evaluaciones.  
+- **dim_conversationevaluationsquestionsscores** → Puntuaciones por pregunta en evaluaciones.  
+- **dim_dataparticipant** → Participantes en una conversación.  
+- **dim_edge** y **dim_edgemetrics** → Dispositivos/redes (edge servers) y sus métricas.  
+
+### 3. Evaluaciones de calidad
+- **dim_evaluationform** → Formularios de evaluación.  
+- **dim_evaluationquestion** → Preguntas de evaluación.  
+- **dim_evaluationquestiongroups** → Grupos de preguntas.  
+- **dim_evaluationquestionoptions** → Opciones de respuesta.  
+
+### 4. Flujos y sesiones
+- **dim_flow** → Flujos de interacción (ej. IVR).  
+- **dim_flowmilestone** → Hitos dentro de un flujo.  
+- **dim_flowoutcome** → Resultados de un flujo.  
+- **dim_session** → Sesiones de usuario.  
+- **dim_sessionflow** → Relación entre sesiones y flujos.  
+- **dim_sessionflowoutcomes** → Resultados alcanzados en sesiones/flujo.  
+- **dim_sessionmetrics** → Métricas de sesiones.  
+- **dim_segment**, **dim_segmenttype** → Segmentos de conversación y tipos de segmento.  
+
+### 5. Organización y estructura
+- **dim_campaign** → Campañas.  
+- **dim_contactlist** → Listas de contactos.  
+- **dim_department** → Departamentos.  
+- **dim_division** → Divisiones organizacionales.  
+- **dim_organization** → Organización principal.  
+- **dim_queue** → Colas de enrutamiento.  
+- **dim_skill** → Habilidades asignables a agentes.  
+- **dim_seg_requestedroutingskillids** → Habilidades solicitadas para enrutamiento.  
+
+### 6. Estados y presencias
+- **dim_disconnecttype** → Tipos de desconexión.  
+- **dim_originatingdirection** → Dirección de origen (entrante, saliente).  
+- **dim_participant** → Participantes en general (puede incluir agentes, clientes, bots).  
+- **dim_presencestatus** → Estados de presencia de usuario (disponible, ausente, en llamada).  
+- **dim_typepresencestatus** → Tipos de estados de presencia.  
+- **dim_userstatusdetails** → Detalles del estado de usuario.  
+
+### 7. Tiempo y medios
+- **dim_hour** → Dimensión de horas del día.  
+- **dim_time** → Dimensión de tiempo general (fecha, semana, mes, año).  
+- **dim_mediatype** → Tipos de medio (voz, chat, email, redes sociales).  
+- **dim_trunk** → Troncales de comunicación (telefonía).  
+
+### 8. Usuarios y wrap-up
+- **dim_user** → Usuarios o agentes.  
+- **dim_wrapup** → Códigos de wrap-up (motivos de cierre).  
+
+---
+
+👉 Este contexto permite a un modelo LLM entender para qué sirve cada tabla y cómo se relacionan.  
+Las **tablas `dim_*` son dimensiones y métricas** que se cruzan con tablas de hechos en reportes de interacciones, usuarios, colas, sesiones y evaluaciones de calidad.
